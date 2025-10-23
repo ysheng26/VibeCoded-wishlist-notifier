@@ -36,6 +36,9 @@ func main() {
 		log.Fatal("Please set SENDER_EMAIL and SENDER_PASSWORD environment variables")
 	}
 
+	certFile := "server.crt"
+	keyFile := "server.key"
+
 	http.HandleFunc("/api/notify", corsMiddleware(stupidPassword(handleNotify)))
 	http.HandleFunc("/health", handleHealth)
 
@@ -45,7 +48,7 @@ func main() {
 	}
 
 	log.Printf("Server starting on port %s", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(http.ListenAndServeTLS(":"+port, certFile, keyFile, nil))
 }
 
 func stupidPassword(next http.HandlerFunc) http.HandlerFunc {
