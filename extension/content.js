@@ -8,41 +8,45 @@
 // - Complete error handling
 
 console.log('Wishlist Notifier content script loaded');
-console.log('⚠️ Copy full content.js from artifacts for production use');
+
 // Site-specific product extractors
 const siteExtractors = {
     'www.amazon.com': {
         name: () => document.querySelector('#productTitle')?.textContent.trim() || 
                     document.querySelector('span.product-title-word-break')?.textContent.trim(),
         price: () => {
-            const whole = document.querySelector('.a-price-whole')?.textContent.trim();
-            const fraction = document.querySelector('.a-price-fraction')?.textContent.trim();
+            const whole = document.querySelector('#corePriceDisplay_desktop_feature_div > div.a-section.a-spacing-none.aok-align-center.aok-relative > span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay > span:nth-child(2) > span.a-price-whole')?.textContent.trim();
+            const fraction = document.querySelector('#corePriceDisplay_desktop_feature_div > div.a-section.a-spacing-none.aok-align-center.aok-relative > span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay > span:nth-child(2) > span.a-price-fraction')?.textContent.trim();
             return whole ? `$${whole}${fraction || ''}` : 'Price not available';
         },
-        imageSelector: '#landingImage, #imgBlkFront, .a-dynamic-image',
+        imageUrl: () => {
+            return document.querySelector('#landingImage, #imgBlkFront, .a-dynamic-image')?.src;
+        },
         storeName: 'Amazon'
     },
     
     'www.microcenter.com': {
-        name: () => document.querySelector('[data-name="product_name"]')?.textContent.trim() ||
-                    document.querySelector('h1[itemprop="name"]')?.textContent.trim(),
+        name: () => document.querySelector('#product-details-control > div.product-header > h1 > span')?.getAttribute('data-name'),
         price: () => {
-            const price = document.querySelector('[itemprop="price"]')?.textContent.trim() ||
-                         document.querySelector('.price')?.textContent.trim();
+            const price = document.querySelector('#product-details-control > div.product-header > h1 > span')?.getAttribute('data-price');
             return price || 'Price not available';
         },
-        imageSelector: '.product-image-gallery img, [itemprop="image"]',
+        imageUrl: () => {
+            return document.querySelector('.productImageZoom')?.src;
+        },
         storeName: 'Micro Center'
     },
     
     'store.steampowered.com': {
         name: () => document.querySelector('.apphub_AppName')?.textContent.trim(),
         price: () => {
-            const price = document.querySelector('.game_purchase_price')?.textContent.trim() ||
-                         document.querySelector('.discount_final_price')?.textContent.trim();
+            const price = document.querySelector('.discount_final_price')?.textContent.trim() ||
+                          document.querySelector('.game_purchase_price')?.textContent.trim();
             return price || 'Free to Play';
         },
-        imageSelector: '.game_header_image_full',
+        imageUrl: () => {
+            return document.querySelector('#gameHeaderImageCtn > img')?.src;
+        },
         storeName: 'Steam'
     },
     
@@ -53,21 +57,11 @@ const siteExtractors = {
             const price = document.querySelector('.price-current')?.textContent.trim();
             return price || 'Price not available';
         },
-        imageSelector: '.product-view-img-original img',
+        imageUrl: () => {
+            return document.querySelector('.product-view-img-original')?.src;
+        },
         storeName: 'Newegg'
     },
-    
-    'www.bestbuy.com': {
-        name: () => document.querySelector('.sku-title h1')?.textContent.trim() ||
-                    document.querySelector('[itemprop="name"]')?.textContent.trim(),
-        price: () => {
-            const price = document.querySelector('.priceView-customer-price span')?.textContent.trim() ||
-                         document.querySelector('[itemprop="price"]')?.textContent.trim();
-            return price || 'Price not available';
-        },
-        imageSelector: '.primary-image, [class*="MediaGallery"] img',
-        storeName: 'Best Buy'
-    }
 };
 
 // Get current site's extractor
@@ -86,55 +80,8 @@ function extractProductInfo() {
         price: extractor.price(),
         url: window.location.href,
         storeName: extractor.storeName,
-        imageSelector: extractor.imageSelector
+        imageUrl: extractor.imageUrl()
     };
-}
-
-// Capture screenshot of product image
-async function captureProductImage(selector) {
-    return new Promise((resolve) => {
-        const img = document.querySelector(selector);
-        if (!img) {
-            resolve(null);
-            return;
-        }
-        
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Wait for image to load
-        if (!img.complete) {
-            img.onload = () => drawAndResolve();
-        } else {
-            drawAndResolve();
-        }
-        
-        function drawAndResolve() {
-            const maxWidth = 800;
-            const maxHeight = 800;
-            let width = img.naturalWidth || img.width;
-            let height = img.naturalHeight || img.height;
-            
-            // Scale down if too large
-            if (width > maxWidth || height > maxHeight) {
-                const ratio = Math.min(maxWidth / width, maxHeight / height);
-                width *= ratio;
-                height *= ratio;
-            }
-            
-            canvas.width = width;
-            canvas.height = height;
-            
-            try {
-                ctx.drawImage(img, 0, 0, width, height);
-                const dataUrl = canvas.toDataURL('image/png');
-                resolve(dataUrl);
-            } catch (error) {
-                console.error('Error capturing image:', error);
-                resolve(null);
-            }
-        }
-    });
 }
 
 // Send notification
@@ -145,18 +92,17 @@ async function sendNotification(recipientEmail) {
     }
     
     // Get settings
-    const data = await chrome.storage.sync.get(['senderName', 'backendUrl']);
+    const data = await chrome.storage.sync.get(['senderName', 'backendUrl', 'backendPassword']);
     const backendUrl = data.backendUrl || 'http://localhost:8080';
     const senderName = data.senderName || '';
-    
-    // Capture screenshot
-    const screenshot = await captureProductImage(product.imageSelector);
-    
+    const stupidPassword = data.backendPassword || '';
+
     try {
         const response = await fetch(`${backendUrl}/api/notify`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'x-yoyoyo': stupidPassword,
             },
             body: JSON.stringify({
                 recipientEmail: recipientEmail,
@@ -164,7 +110,7 @@ async function sendNotification(recipientEmail) {
                 productPrice: product.price,
                 productUrl: product.url,
                 storeName: product.storeName,
-                screenshot: screenshot,
+                imageUrl: product.imageUrl,
                 senderName: senderName
             })
         });

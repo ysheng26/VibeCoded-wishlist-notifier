@@ -1,14 +1,11 @@
 package main
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"gopkg.in/gomail.v2"
@@ -20,7 +17,7 @@ type NotifyRequest struct {
 	ProductPrice   string `json:"productPrice"`
 	ProductURL     string `json:"productUrl"`
 	StoreName      string `json:"storeName"`
-	Screenshot     string `json:"screenshot"`
+	ImageURL       string `json:"imageUrl"`
 	SenderName     string `json:"senderName"`
 }
 
@@ -39,7 +36,7 @@ func main() {
 		log.Fatal("Please set SENDER_EMAIL and SENDER_PASSWORD environment variables")
 	}
 
-	http.HandleFunc("/api/notify", corsMiddleware(handleNotify))
+	http.HandleFunc("/api/notify", corsMiddleware(stupidPassword(handleNotify)))
 	http.HandleFunc("/health", handleHealth)
 
 	port := os.Getenv("PORT")
@@ -51,11 +48,22 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
+func stupidPassword(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		stupidPassword := r.Header.Get("x-yoyoyo")
+		if stupidPassword != os.Getenv("STUPID_PASSWORD") {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		next(w, r)
+	}
+}
+
 func corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,x-yoyoyo")
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
@@ -99,28 +107,16 @@ func handleNotify(w http.ResponseWriter, r *http.Request) {
 }
 
 func sendEmail(req NotifyRequest) error {
+	log.Printf("sendEmail %+v\n", req)
 	m := gomail.NewMessage()
 	m.SetHeader("From", senderEmail)
 	m.SetHeader("To", req.RecipientEmail)
 
-	subject := fmt.Sprintf("Someone is thinking of you 💝")
+	subject := "Someone is thinking of you 💝"
 	m.SetHeader("Subject", subject)
 
 	htmlBody := generateEmailHTML(req)
 	m.SetBody("text/html", htmlBody)
-
-	if req.Screenshot != "" {
-		screenshot := strings.TrimPrefix(req.Screenshot, "data:image/png;base64,")
-		screenshot = strings.TrimPrefix(screenshot, "data:image/jpeg;base64,")
-
-		imageData, err := base64.StdEncoding.DecodeString(screenshot)
-		if err == nil && len(imageData) > 0 {
-			m.Embed("screenshot.png", gomail.SetCopyFunc(func(w io.Writer) error {
-				_, err := w.Write(imageData)
-				return err
-			}))
-		}
-	}
 
 	d := gomail.NewDialer(smtpHost, smtpPort, senderEmail, senderPass)
 	return d.DialAndSend(m)
@@ -156,7 +152,7 @@ func generateEmailHTML(req NotifyRequest) string {
                     <tr>
                         <td style="padding: 20px 40px;">
                             <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; text-align: center;">
-                                <img src="cid:screenshot.png" alt="Product" style="max-width: 100%%; height: auto; border-radius: 6px; display: block; margin: 0 auto;" />
+                                <img src="%s" alt="Product" style="max-width: 100%%; height: auto; border-radius: 6px; display: block; margin: 0 auto;" />
                             </div>
                         </td>
                     </tr>
@@ -205,5 +201,5 @@ func generateEmailHTML(req NotifyRequest) string {
     </table>
 </body>
 </html>
-	`, senderName, req.ProductName, req.ProductPrice, req.StoreName, req.ProductURL, time.Now().Format("January 2, 2006"))
+	`, senderName, req.ImageURL, req.ProductName, req.ProductPrice, req.StoreName, req.ProductURL, time.Now().Format("January 2, 2006"))
 }

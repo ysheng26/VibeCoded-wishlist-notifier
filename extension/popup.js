@@ -57,7 +57,8 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
         showStatus('Please enter a backend URL', 'error');
         return;
     }
-    await chrome.storage.sync.set({ senderName, backendUrl });
+    const backendPassword = document.getElementById('backendPassword').value.trim();
+    await chrome.storage.sync.set({ senderName, backendUrl, backendPassword });
     showStatus('Settings saved successfully', 'success');
 });
 
