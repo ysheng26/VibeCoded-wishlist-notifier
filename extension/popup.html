@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wishlist Notifier</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { width: 350px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #2c3e50; }
+        .container { background: white; border-radius: 0; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 24px; text-align: center; }
+        .header h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+        .header p { font-size: 13px; opacity: 0.9; }
+        .content { padding: 24px; }
+        .section { margin-bottom: 24px; }
+        .section-title { font-size: 14px; font-weight: 600; color: #2c3e50; margin-bottom: 12px; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 6px; }
+        input { width: 100%; padding: 10px 12px; border: 1.5px solid #e0e0e0; border-radius: 6px; font-size: 14px; }
+        input:focus { outline: none; border-color: #667eea; }
+        .email-list { max-height: 150px; overflow-y: auto; margin-bottom: 12px; }
+        .email-item { display: flex; justify-content: space-between; padding: 10px 12px; background: #f8f9fa; border-radius: 6px; margin-bottom: 8px; }
+        .remove-btn { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 16px; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-secondary { background: #f8f9fa; color: #2c3e50; border: 1.5px solid #e0e0e0; }
+        .empty-state { text-align: center; padding: 20px; color: #95a5a6; font-size: 13px; }
+        .status-message { padding: 10px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 12px; text-align: center; }
+        .status-success { background: #d4edda; color: #155724; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        .divider { height: 1px; background: #e0e0e0; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💝 Wishlist Notifier</h1>
+            <p>Send subtle hints to loved ones</p>
+        </div>
+        <div class="content">
+            <div id="statusMessage"></div>
+            <div class="section">
+                <div class="section-title">⚙️ Settings</div>
+                <div class="input-group">
+                    <label for="senderName">Your Name (optional)</label>
+                    <input type="text" id="senderName" placeholder="e.g., John">
+                </div>
+                <div class="input-group">
+                    <label for="backendUrl">Backend Server URL</label>
+                    <input type="url" id="backendUrl" placeholder="http://localhost:8080">
+                </div>
+            </div>
+            <div class="divider"></div>
+            <div class="section">
+                <div class="section-title">📧 Recipients</div>
+                <div class="email-list" id="emailList">
+                    <div class="empty-state">No recipients added yet</div>
+                </div>
+                <div class="input-group">
+                    <label for="newEmail">Add Recipient Email</label>
+                    <input type="email" id="newEmail" placeholder="partner@example.com">
+                </div>
+                <button class="btn btn-secondary" id="addEmailBtn">Add Email</button>
+            </div>
+            <div class="divider"></div>
+            <button class="btn btn-primary" id="saveBtn">Save Settings</button>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>

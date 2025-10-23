@@ -1,0 +1,18 @@
+/* IMPORTANT: This is a minimal placeholder */
+/* Copy the full content.css from the artifacts above for production use */
+
+.wishlist-notify-button {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 999999;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
