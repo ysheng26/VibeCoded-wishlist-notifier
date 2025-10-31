@@ -5,8 +5,7 @@
   "description": "Send subtle hints about products you're interested in",
   "permissions": [
     "storage",
-    "activeTab",
-    "scripting"
+    "activeTab"
   ],
   "host_permissions": [
     "https://www.amazon.com/*",
