@@ -4,8 +4,7 @@
   "version": "1.0.0",
   "description": "Send subtle hints about products you're interested in",
   "permissions": [
-    "storage",
-    "activeTab"
+    "storage"
   ],
   "host_permissions": [
     "https://www.amazon.com/*",
